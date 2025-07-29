@@ -73,10 +73,10 @@ class RealEstateBot:
         logger.info(f"🔍 Handling property search query: '{query}'")
 
         try:
-            # Get current event loop and RTVI instance
+            # Get current event loop
             loop = asyncio.get_event_loop()
             
-            # Create a context-aware search tool
+            # Create context-aware search tool
             def execute_search_with_context(*args, **kwargs):
                 return execute_hybrid_search(
                     *args,
@@ -85,23 +85,14 @@ class RealEstateBot:
                     **kwargs
                 )
             
-            # Temporarily replace the tool in Strands agent with context
-            original_tool = None
+            # Replace the tool with context-aware version (no restoration needed)
             for i, tool_func in enumerate(self.strands_agent.tools):
                 if tool_func.__name__ == 'execute_hybrid_search':
-                    original_tool = tool_func
                     self.strands_agent.tools[i] = execute_search_with_context
                     break
             
             # Execute search and summarization via Strands agent
             result = await loop.run_in_executor(None, self.strands_agent, query)
-            
-            # Restore original tool
-            if original_tool:
-                for i, tool_func in enumerate(self.strands_agent.tools):
-                    if tool_func == execute_search_with_context:
-                        self.strands_agent.tools[i] = original_tool
-                        break
             
             logger.info("✅ Property search completed successfully")
 
